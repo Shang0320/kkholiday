@@ -2,9 +2,27 @@ name: KKHoliday 24H Autonomous Monitor
 
 on:
   schedule:
-    # 每 5 分鐘在 GitHub 雲端自動執行巡檢
+    # 每 5 分鐘全天候在 GitHub 雲端巡檢
     - cron: '*/5 * * * *'
-  workflow_dispatch: # 支援在 GitHub 網頁上手動點擊立即執行
+  workflow_dispatch:
+    # 支援在 GitHub 網頁上彈出控制面板自由調控參數！
+    inputs:
+      target_date:
+        description: '監控梯次日期'
+        required: true
+        default: '2026/10/31 (六)'
+      target_code:
+        description: '梯次產品代碼'
+        required: true
+        default: 'ILN34261031A'
+      min_seats:
+        description: '觸發通報人數門檻 (大於等於幾人時通知)'
+        required: true
+        default: '2'
+      quiet_hours:
+        description: '是否啟用夜間 23:00~08:00 靜音免打擾 (true/false)'
+        required: true
+        default: 'true'
 
 jobs:
   check-seats:
@@ -20,9 +38,12 @@ jobs:
         with:
           node-version: 20
 
-      - name: Run KKHoliday Double Slots Seat Checker
+      - name: Run Seat Checker with Custom Parameters
         env:
           TELEGRAM_BOT_TOKEN: '8887558205:AAGwaaNTJRx3DnPncPFvoLzWN7TJiFZ2_4o'
           TELEGRAM_CHAT_ID: '1177409998'
-          QUIET_HOURS_ENABLED: 'true'
+          CUSTOM_TARGET_DATE: ${{ github.event.inputs.target_date }}
+          CUSTOM_TARGET_CODE: ${{ github.event.inputs.target_code }}
+          CUSTOM_MIN_SEATS: ${{ github.event.inputs.min_seats }}
+          CUSTOM_QUIET_HOURS: ${{ github.event.inputs.quiet_hours }}
         run: node scripts/monitor.js
