@@ -92,7 +92,19 @@ export default function HomePage() {
         }
       }
       const savedLogs = localStorage.getItem(STORAGE_KEY_LOGS);
-      if (savedLogs) setLogs(JSON.parse(savedLogs));
+      if (savedLogs) {
+        const parsedLogs = JSON.parse(savedLogs) as CheckLog[];
+        const migratedLogs = parsedLogs.map((log) =>
+          log.notificationResult === '僅測試此手機的畫面、音效與瀏覽器通知，不會觸發 Telegram'
+            ? {
+                ...log,
+                notificationResult: '這是舊版手機模擬紀錄；Telegram 實測請點「Telegram 實測」後執行 Run workflow',
+              }
+            : log
+        );
+        setLogs(migratedLogs);
+        localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(migratedLogs));
+      }
       if ('Notification' in window) setBrowserPermission(Notification.permission);
     } catch (error) {
       console.warn('Failed to restore browser settings:', error);
