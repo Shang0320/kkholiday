@@ -55,7 +55,7 @@ export function NotificationSettings({
 
       <div className="flex items-start gap-3 rounded-xl border border-stone-200 bg-stone-50 p-4 text-xs text-stone-700">
         <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
-        <p className="leading-relaxed">手機網頁不下載、不顯示也不保存 Telegram 憑證。點監控卡片的「Telegram 實測」，再於 GitHub Actions 按 Run workflow，會真正發送一則測試訊息。</p>
+        <p className="leading-relaxed">手機網頁不下載、不顯示也不保存 Telegram 憑證。第一次設定專用 GitHub Token 後，點監控卡片的「Telegram 實測」就會直接發送，不再跳轉 GitHub。</p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 border-t border-stone-200 pt-5 sm:grid-cols-2">

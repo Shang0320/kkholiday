@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import { TourGroup, MonitoredSlot, SlotStatusResult } from '@/lib/types';
 import {
@@ -15,10 +15,16 @@ import {
   Check,
   Moon,
   Cloud,
+  KeyRound,
+  LoaderCircle,
+  Send,
+  X,
 } from 'lucide-react';
 
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || '';
-const TELEGRAM_TEST_URL = 'https://github.com/Shang0320/kkholiday/actions/workflows/telegram-test.yml';
+const GITHUB_TOKEN_STORAGE_KEY = 'kkholiday_github_actions_token_v1';
+const WORKFLOW_DISPATCH_URL = 'https://api.github.com/repos/Shang0320/kkholiday/actions/workflows/telegram-test.yml/dispatches';
+const CREATE_TOKEN_URL = 'https://github.com/settings/personal-access-tokens/new?name=KKHoliday%20mobile%20test&description=Trigger%20the%20kkholiday%20Telegram%20test%20workflow&target_name=Shang0320&expires_in=90&actions=write';
 
 interface TargetSpotlightProps {
   slots: MonitoredSlot[];
@@ -46,6 +52,67 @@ export function TargetSpotlight({
   allGroups,
 }: TargetSpotlightProps) {
   const anyConditionMet = slotResults.some((r) => r.isConditionMet);
+  const [tokenDialogSlot, setTokenDialogSlot] = useState<string | null>(null);
+  const [tokenInput, setTokenInput] = useState('');
+  const [tokenError, setTokenError] = useState('');
+  const [telegramTestState, setTelegramTestState] = useState<Record<string, 'idle' | 'sending' | 'sent' | 'error'>>({});
+
+  const dispatchTelegramTest = async (slotId: string, token: string) => {
+    setTelegramTestState((prev) => ({ ...prev, [slotId]: 'sending' }));
+    setTokenError('');
+    try {
+      const response = await fetch(WORKFLOW_DISPATCH_URL, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/vnd.github+json',
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+        body: JSON.stringify({ ref: 'main', inputs: { test_slot: slotId } }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        const detail = typeof payload?.message === 'string' ? payload.message : `GitHub HTTP ${response.status}`;
+        throw new Error(detail);
+      }
+
+      setTelegramTestState((prev) => ({ ...prev, [slotId]: 'sent' }));
+      setTokenDialogSlot(null);
+      window.setTimeout(() => {
+        setTelegramTestState((prev) => ({ ...prev, [slotId]: 'idle' }));
+      }, 12000);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '無法觸發 GitHub Actions';
+      setTelegramTestState((prev) => ({ ...prev, [slotId]: 'error' }));
+      setTokenError(`發送失敗：${message}。請確認 Token 已選擇 kkholiday 儲存庫且 Actions 權限為 Read and write。`);
+      localStorage.removeItem(GITHUB_TOKEN_STORAGE_KEY);
+      setTokenInput('');
+      setTokenDialogSlot(slotId);
+    }
+  };
+
+  const handleTelegramTest = (slotId: string) => {
+    const savedToken = localStorage.getItem(GITHUB_TOKEN_STORAGE_KEY);
+    if (savedToken) {
+      void dispatchTelegramTest(slotId, savedToken);
+      return;
+    }
+    setTokenInput('');
+    setTokenError('');
+    setTokenDialogSlot(slotId);
+  };
+
+  const saveTokenAndSend = () => {
+    const token = tokenInput.trim();
+    if (!token) {
+      setTokenError('請貼上 GitHub Fine-grained Token。');
+      return;
+    }
+    localStorage.setItem(GITHUB_TOKEN_STORAGE_KEY, token);
+    if (tokenDialogSlot) void dispatchTelegramTest(tokenDialogSlot, token);
+  };
 
   return (
     <div id="target-spotlight" className="relative rounded-2xl overflow-hidden border border-stone-200 bg-white shadow-md space-y-0">
@@ -302,16 +369,21 @@ export function TargetSpotlight({
                       <span>手機模擬 (可售=2)</span>
                     </button>
 
-                    <a
-                      href={TELEGRAM_TEST_URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => handleTelegramTest(slot.id)}
+                      disabled={telegramTestState[slot.id] === 'sending'}
                       className="inline-flex w-full sm:w-auto items-center justify-center gap-1 px-2.5 py-2 sm:py-1.5 text-xs sm:text-2xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-md transition-colors border border-emerald-700"
-                      title="開啟 GitHub Actions，實際發送 Telegram 測試訊息"
+                      title="直接觸發 GitHub Actions 並實際發送 Telegram 測試訊息"
                     >
-                      <span>Telegram 實測</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
+                      {telegramTestState[slot.id] === 'sending' ? (
+                        <><LoaderCircle className="w-3 h-3 animate-spin" /><span>發送中...</span></>
+                      ) : telegramTestState[slot.id] === 'sent' ? (
+                        <><Check className="w-3 h-3" /><span>已送出！</span></>
+                      ) : (
+                        <><Send className="w-3 h-3" /><span>Telegram 實測</span></>
+                      )}
+                    </button>
                   </div>
 
                   <a
@@ -335,6 +407,58 @@ export function TargetSpotlight({
           })}
         </div>
       </div>
+
+      {tokenDialogSlot && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="github-token-title">
+          <div className="w-full max-w-lg rounded-2xl border border-stone-200 bg-white p-5 shadow-2xl sm:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <span className="rounded-xl bg-emerald-100 p-2 text-emerald-700"><KeyRound className="h-5 w-5" /></span>
+                <div>
+                  <h2 id="github-token-title" className="text-lg font-bold text-stone-900">第一次設定一鍵 Telegram 實測</h2>
+                  <p className="mt-1 text-xs leading-relaxed text-stone-600">只需設定一次。Token 僅保存在這支手機的瀏覽器，不會上傳到網頁或 GitHub 原始碼。</p>
+                </div>
+              </div>
+              <button type="button" onClick={() => setTokenDialogSlot(null)} className="rounded-lg p-2 text-stone-500 hover:bg-stone-100" aria-label="關閉"><X className="h-5 w-5" /></button>
+            </div>
+
+            <ol className="mt-5 space-y-2 rounded-xl border border-sky-200 bg-sky-50 p-4 text-xs leading-relaxed text-sky-950">
+              <li><strong>1.</strong> 點下方按鈕建立權限受限的 Token。</li>
+              <li><strong>2.</strong> Repository access 選「Only select repositories」→ <strong>kkholiday</strong>。</li>
+              <li><strong>3.</strong> 確認 Actions 為 <strong>Read and write</strong>，建立後複製 Token 貼回下方。</li>
+            </ol>
+
+            <a href={CREATE_TOKEN_URL} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-stone-900 px-4 py-3 text-sm font-bold text-white hover:bg-stone-800">
+              <KeyRound className="h-4 w-4" /> 建立專用 GitHub Token <ExternalLink className="h-4 w-4" />
+            </a>
+
+            <label className="mt-4 block text-xs font-bold text-stone-800" htmlFor="github-actions-token">GitHub Fine-grained Token</label>
+            <input
+              id="github-actions-token"
+              type="password"
+              value={tokenInput}
+              onChange={(event) => setTokenInput(event.target.value)}
+              onKeyDown={(event) => { if (event.key === 'Enter') saveTokenAndSend(); }}
+              placeholder="github_pat_..."
+              autoComplete="off"
+              spellCheck={false}
+              className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-3 font-mono text-sm text-stone-900 outline-hidden focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+            />
+            {tokenError && <p className="mt-2 rounded-lg bg-rose-50 px-3 py-2 text-xs leading-relaxed text-rose-700">{tokenError}</p>}
+
+            <button
+              type="button"
+              onClick={saveTokenAndSend}
+              disabled={telegramTestState[tokenDialogSlot] === 'sending'}
+              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-700 disabled:cursor-wait disabled:opacity-70"
+            >
+              {telegramTestState[tokenDialogSlot] === 'sending' ? <><LoaderCircle className="h-4 w-4 animate-spin" /> 發送中...</> : <><Send className="h-4 w-4" /> 儲存並直接發送 Telegram</>}
+            </button>
+
+            <p className="mt-3 text-center text-2xs leading-relaxed text-stone-500">這組 Token 只需 Actions 寫入權限；請勿使用擁有其他儲存庫或帳號管理權限的 Token。</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

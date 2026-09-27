@@ -98,7 +98,7 @@ export default function HomePage() {
           log.notificationResult === '僅測試此手機的畫面、音效與瀏覽器通知，不會觸發 Telegram'
             ? {
                 ...log,
-                notificationResult: '這是舊版手機模擬紀錄；Telegram 實測請點「Telegram 實測」後執行 Run workflow',
+                notificationResult: '這是舊版手機模擬紀錄；真實推播請點「Telegram 實測」，已設定 Token 時會直接發送',
               }
             : log
         );
@@ -377,7 +377,7 @@ export default function HomePage() {
       availableSeats: simulatedSeats,
       message: `【模擬測試】${targetSlot.label} (${targetSlot.targetDate}) 模擬名額釋出 ${simulatedSeats} 人，觸發警報`,
       notified: false,
-      notificationResult: '手機模擬已完成；要真正發送 Telegram，請點「Telegram 實測」後執行 Run workflow',
+      notificationResult: '手機模擬已完成；真實推播請點「Telegram 實測」，已設定 Token 時會直接發送',
     });
   };
 

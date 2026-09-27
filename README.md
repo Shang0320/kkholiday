@@ -26,7 +26,7 @@ Telegram 憑證不得寫入原始碼。請在 GitHub 倉庫的 `Settings → Sec
 
 ## Telegram 實測
 
-在手機頁面點「Telegram 實測」，或開啟 GitHub Actions 的 `Send Telegram Test` 工作流程，選擇梯次後按 `Run workflow`。這個實測會略過名額門檻與夜間靜音，真正發送一則 Telegram 訊息。
+首次在手機頁面點「Telegram 實測」時，依畫面建立一組僅限 `kkholiday` 儲存庫、只有 `Actions: write` 權限的 Fine-grained GitHub Token。Token 僅保存在該手機的瀏覽器；後續按綠色按鈕會直接觸發 `Send Telegram Test` 工作流程，不再跳轉 GitHub。實測會略過名額門檻與夜間靜音，真正發送一則 Telegram 訊息。
 
 ## 本機驗證
 
