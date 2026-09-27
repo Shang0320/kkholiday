@@ -1,0 +1,6 @@
+{
+  "name": "KKHoliday 旅遊名額即時監控推播系統 (Telegram)",
+  "description": "即時監控 KKHoliday 行程（太平山山毛櫸一日遊 ILN34）名額與候補狀況，當 2026/10/31 (六) 可售名額釋出（>1）立即發送 Telegram Bot 與網頁推播通知。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
