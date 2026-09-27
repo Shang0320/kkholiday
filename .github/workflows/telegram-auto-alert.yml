@@ -1,0 +1,44 @@
+name: Automatic Telegram Alert
+
+on:
+  workflow_dispatch:
+    inputs:
+      alert_slot:
+        description: 'Slot whose countdown reached zero'
+        required: true
+        type: choice
+        default: slot_1
+        options:
+          - slot_1
+          - slot_2
+      quiet_hours_enabled:
+        description: 'Respect the 23:00-08:00 quiet-hours switch'
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  send-alert:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Recheck KKHoliday and send automatic Telegram alert
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PREVIOUS_STATUS_URL: https://shang0320.github.io/kkholiday/data/status.json
+          SEND_AUTO_TELEGRAM: 'true'
+          AUTO_NOTIFY_SLOT: ${{ inputs.alert_slot }}
+          AUTO_QUIET_HOURS_ENABLED: ${{ inputs.quiet_hours_enabled }}
+        run: node scripts/monitor.js

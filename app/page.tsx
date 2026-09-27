@@ -17,10 +17,12 @@ import {
 } from '@/lib/types';
 import { playAlertChime } from '@/lib/audio';
 import { DEFAULT_TARGET_DATE, DEFAULT_TARGET_CODE, DEFAULT_KEYWORD } from '@/lib/scraper';
+import { dispatchGitHubWorkflow, GITHUB_TOKEN_STORAGE_KEY } from '@/lib/github-actions';
 import repositoryConfig from '@/config.json';
 
 const STORAGE_KEY_CONFIG = 'kkholiday_monitor_config_v3';
 const STORAGE_KEY_LOGS = 'kkholiday_monitor_logs_v3';
+const STORAGE_KEY_AUTO_TELEGRAM = 'kkholiday_auto_telegram_sent_v1';
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
 // Default configuration with 2 target groups:
@@ -79,6 +81,9 @@ export default function HomePage() {
 
   // Track each slot's previous condition to prevent repetitive alert flooding
   const prevConditionMetMapRef = useRef<Record<string, boolean>>({});
+  const autoTelegramSentRef = useRef<Record<string, string>>({});
+  const autoTelegramInFlightRef = useRef<Record<string, boolean>>({});
+  const missingAutoTokenLoggedRef = useRef<Record<string, boolean>>({});
   const configRef = useRef(config);
 
   /* Browser-only persistence is intentionally restored after hydration. */
@@ -106,6 +111,8 @@ export default function HomePage() {
         setLogs(migratedLogs);
         localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(migratedLogs));
       }
+      const savedAutoTelegram = localStorage.getItem(STORAGE_KEY_AUTO_TELEGRAM);
+      if (savedAutoTelegram) autoTelegramSentRef.current = JSON.parse(savedAutoTelegram);
       if ('Notification' in window) setBrowserPermission(Notification.permission);
     } catch (error) {
       console.warn('Failed to restore browser settings:', error);
@@ -246,6 +253,81 @@ export default function HomePage() {
                 ? 'Telegram 由 GitHub Actions 背景排程處理'
                 : '尚未設定 GitHub Actions Secrets',
             });
+          }
+
+          const autoSignature = `${slot.targetCode}|${slot.comparisonOperator || '>='}|${slot.minAvailableSeats}`;
+          const taipeiHour = Number(new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Asia/Taipei',
+            hour: '2-digit',
+            hour12: false,
+          }).format(new Date()));
+          const quietNow = current.quietHoursEnabled
+            && (taipeiHour >= current.quietStartHour || taipeiHour < current.quietEndHour);
+
+          if (!meetsCondition) {
+            delete autoTelegramSentRef.current[slot.id];
+            delete missingAutoTokenLoggedRef.current[slot.id];
+            localStorage.setItem(STORAGE_KEY_AUTO_TELEGRAM, JSON.stringify(autoTelegramSentRef.current));
+          } else if (
+            !quietNow
+            && autoTelegramSentRef.current[slot.id] !== autoSignature
+            && !autoTelegramInFlightRef.current[slot.id]
+          ) {
+            const githubToken = localStorage.getItem(GITHUB_TOKEN_STORAGE_KEY);
+            if (!githubToken) {
+              if (!missingAutoTokenLoggedRef.current[slot.id]) {
+                missingAutoTokenLoggedRef.current[slot.id] = true;
+                addLog({
+                  timestamp: nowTimeStr,
+                  status: 'error',
+                  date: result.targetDate,
+                  targetCode: result.targetCode,
+                  slotLabel: slot.label,
+                  availableSeats: result.availableSeats,
+                  message: `倒數已到且${slot.label}符合門檻，但尚未設定專用 GitHub Token，無法自動觸發 Telegram`,
+                  notified: false,
+                  notificationResult: '請先完成一次「Telegram 實測」的 Token 設定',
+                });
+              }
+            } else {
+              autoTelegramInFlightRef.current[slot.id] = true;
+              void dispatchGitHubWorkflow(
+                'telegram-auto-alert.yml',
+                {
+                  alert_slot: slot.id,
+                  quiet_hours_enabled: String(current.quietHoursEnabled),
+                },
+                githubToken,
+              ).then(() => {
+                autoTelegramSentRef.current[slot.id] = autoSignature;
+                localStorage.setItem(STORAGE_KEY_AUTO_TELEGRAM, JSON.stringify(autoTelegramSentRef.current));
+                addLog({
+                  timestamp: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
+                  status: 'alert',
+                  date: result.targetDate,
+                  targetCode: result.targetCode,
+                  slotLabel: slot.label,
+                  availableSeats: result.availableSeats,
+                  message: `倒數已到，${slot.label}符合門檻，已自動觸發 Telegram 雲端推播`,
+                  notified: true,
+                  notificationResult: 'Telegram 自動推播已送交 GitHub Actions，同一條件不會重複發送',
+                });
+              }).catch((error) => {
+                const message = error instanceof Error ? error.message : '無法觸發 GitHub Actions';
+                addLog({
+                  timestamp: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
+                  status: 'error',
+                  date: result.targetDate,
+                  targetCode: result.targetCode,
+                  slotLabel: slot.label,
+                  availableSeats: result.availableSeats,
+                  message: `Telegram 自動推播觸發失敗：${message}`,
+                  notified: false,
+                });
+              }).finally(() => {
+                autoTelegramInFlightRef.current[slot.id] = false;
+              });
+            }
           }
 
           prevConditionMetMapRef.current[slot.id] = meetsCondition;

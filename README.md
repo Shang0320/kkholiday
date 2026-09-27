@@ -30,6 +30,8 @@ Telegram 憑證不得寫入原始碼。請在 GitHub 倉庫的 `Settings → Sec
 
 同一組專用 Token 也用於「23:00–08:00 靜音」switch。切換後會觸發 `Update Monitor Settings` 工作流程、更新 `config.json` 並重新部署 GitHub Pages，約 1–2 分鐘後套用於雲端 Telegram 排程。
 
+手機頁面的輪詢倒數到期時，若梯次符合通知門檻、不在已開啟的靜音時段，且此手機已設定專用 GitHub Token，會自動觸發 `Automatic Telegram Alert` 重新檢查 KKHoliday 並推播。同一梯次與門檻在條件持續成立期間只發一次；條件恢復為不成立後會重新待命。
+
 ## 本機驗證
 
 ```bash

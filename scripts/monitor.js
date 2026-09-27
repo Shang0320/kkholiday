@@ -10,6 +10,9 @@ const PREVIOUS_STATUS_URL = process.env.PREVIOUS_STATUS_URL || '';
 const FORCE_NOTIFY = process.env.FORCE_NOTIFY === 'true';
 const SEND_TEST_TELEGRAM = process.env.SEND_TEST_TELEGRAM === 'true';
 const TEST_SLOT = process.env.TEST_SLOT || 'slot_1';
+const SEND_AUTO_TELEGRAM = process.env.SEND_AUTO_TELEGRAM === 'true';
+const AUTO_NOTIFY_SLOT = process.env.AUTO_NOTIFY_SLOT || '';
+const AUTO_QUIET_HOURS_ENABLED = process.env.AUTO_QUIET_HOURS_ENABLED !== 'false';
 
 async function fetchText(url) {
   const response = await fetch(url, {
@@ -170,8 +173,9 @@ async function main() {
   const taipeiHour = Number(new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Taipei', hour: '2-digit', hour12: false,
   }).format(checkedAt));
-  const quiet = config.quietHours?.enabled !== false
-    && (taipeiHour >= Number(config.quietHours?.startHour ?? 23) || taipeiHour < Number(config.quietHours?.endHour ?? 8));
+  const inQuietWindow = taipeiHour >= Number(config.quietHours?.startHour ?? 23)
+    || taipeiHour < Number(config.quietHours?.endHour ?? 8);
+  const quiet = config.quietHours?.enabled !== false && inQuietWindow;
 
   if (SEND_TEST_TELEGRAM) {
     if (!notificationsConfigured) {
@@ -184,6 +188,20 @@ async function main() {
     for (const result of testResults) {
       await sendTelegram(result, checkedAt, { isTest: true });
       console.log(`Telegram test sent for ${result.label}`);
+    }
+  } else if (SEND_AUTO_TELEGRAM) {
+    if (!notificationsConfigured) {
+      throw new Error('Automatic Telegram alert requested, but TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is missing');
+    }
+    const result = slotResults.find((item) => item.slotId === AUTO_NOTIFY_SLOT);
+    if (!result) throw new Error(`Unknown AUTO_NOTIFY_SLOT: ${AUTO_NOTIFY_SLOT}`);
+    if (!result.isConditionMet) {
+      console.log(`Automatic Telegram skipped because ${result.label} no longer meets its threshold`);
+    } else if (AUTO_QUIET_HOURS_ENABLED && inQuietWindow) {
+      console.log(`Automatic Telegram skipped during quiet hours for ${result.label}`);
+    } else {
+      await sendTelegram(result, checkedAt);
+      console.log(`Automatic Telegram sent for ${result.label}`);
     }
   } else {
     for (const result of slotResults) {
