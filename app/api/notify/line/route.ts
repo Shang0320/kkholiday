@@ -147,22 +147,15 @@ export async function POST(req: NextRequest) {
           isTriggered: false,
         };
 
-        const formatCondition = (slot: MonitoredSlotSummary) => {
-          const op = slot.comparisonOperator || (slot.minSeats >= 2 ? '>=' : '>');
-          let opHtml = '&gt;=';
-          let note = '';
-          if (op === '<=') {
-            opHtml = '&lt;=';
-            note = ' (倒數即將搶光)';
-          } else if (op === '<') {
-            opHtml = '&lt;';
-            note = ' (倒數即將搶光)';
-          } else if (op === '>') {
-            opHtml = '&gt;';
-          }
-          return `可售人數 ${opHtml} ${slot.minSeats} 人${note}`;
-        };
-
+const formatCondition = (slot: MonitoredSlotSummary) => {
+    const op = slot.comparisonOperator;
+    let opHtml = '&gt;=';
+    if ((op as string) === '>') {
+      opHtml = '&gt; (大於)';
+    }
+    return `可售人數 ${opHtml} ${slot.minSeats} 人`;
+  };
+       
         const alertHeader = triggeredSlotLabel
           ? `🚨 <b>【KKHoliday 名額釋出警報！】${triggeredSlotLabel}</b>`
           : `🚨 <b>【KKHoliday 名額釋出警報！】</b>`;
