@@ -17,6 +17,8 @@ import {
   Cloud,
 } from 'lucide-react';
 
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || '';
+
 interface TargetSpotlightProps {
   slots: MonitoredSlot[];
   slotResults: SlotStatusResult[];
@@ -49,7 +51,7 @@ export function TargetSpotlight({
       {/* Top Banner with Taipingshan Visual */}
       <div className="relative h-48 sm:h-56 md:h-64 w-full bg-stone-900 overflow-hidden">
         <Image
-          src="/images/taipingshan_hero.jpg"
+          src={`${BASE_PATH}/images/taipingshan_hero.jpg`}
           alt="太平山山毛櫸秋季金黃步道"
           fill
           priority
