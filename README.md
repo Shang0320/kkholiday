@@ -28,6 +28,8 @@ Telegram 憑證不得寫入原始碼。請在 GitHub 倉庫的 `Settings → Sec
 
 首次在手機頁面點「Telegram 實測」時，依畫面建立一組僅限 `kkholiday` 儲存庫、只有 `Actions: write` 權限的 Fine-grained GitHub Token。Token 僅保存在該手機的瀏覽器；後續按綠色按鈕會直接觸發 `Send Telegram Test` 工作流程，不再跳轉 GitHub。實測會略過名額門檻與夜間靜音，真正發送一則 Telegram 訊息。
 
+同一組專用 Token 也用於「23:00–08:00 靜音」switch。切換後會觸發 `Update Monitor Settings` 工作流程、更新 `config.json` 並重新部署 GitHub Pages，約 1–2 分鐘後套用於雲端 Telegram 排程。
+
 ## 本機驗證
 
 ```bash

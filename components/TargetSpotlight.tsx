@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { TourGroup, MonitoredSlot, SlotStatusResult } from '@/lib/types';
+import { CREATE_TOKEN_URL, dispatchGitHubWorkflow, GITHUB_TOKEN_STORAGE_KEY } from '@/lib/github-actions';
 import {
   ExternalLink,
   CheckCircle2,
@@ -22,9 +23,6 @@ import {
 } from 'lucide-react';
 
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || '';
-const GITHUB_TOKEN_STORAGE_KEY = 'kkholiday_github_actions_token_v1';
-const WORKFLOW_DISPATCH_URL = 'https://api.github.com/repos/Shang0320/kkholiday/actions/workflows/telegram-test.yml/dispatches';
-const CREATE_TOKEN_URL = 'https://github.com/settings/personal-access-tokens/new?name=KKHoliday%20mobile%20test&description=Trigger%20the%20kkholiday%20Telegram%20test%20workflow&target_name=Shang0320&expires_in=90&actions=write';
 
 interface TargetSpotlightProps {
   slots: MonitoredSlot[];
@@ -61,22 +59,7 @@ export function TargetSpotlight({
     setTelegramTestState((prev) => ({ ...prev, [slotId]: 'sending' }));
     setTokenError('');
     try {
-      const response = await fetch(WORKFLOW_DISPATCH_URL, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/vnd.github+json',
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'X-GitHub-Api-Version': '2022-11-28',
-        },
-        body: JSON.stringify({ ref: 'main', inputs: { test_slot: slotId } }),
-      });
-
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({}));
-        const detail = typeof payload?.message === 'string' ? payload.message : `GitHub HTTP ${response.status}`;
-        throw new Error(detail);
-      }
+      await dispatchGitHubWorkflow('telegram-test.yml', { test_slot: slotId }, token);
 
       setTelegramTestState((prev) => ({ ...prev, [slotId]: 'sent' }));
       setTokenDialogSlot(null);

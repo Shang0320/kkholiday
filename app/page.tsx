@@ -17,6 +17,7 @@ import {
 } from '@/lib/types';
 import { playAlertChime } from '@/lib/audio';
 import { DEFAULT_TARGET_DATE, DEFAULT_TARGET_CODE, DEFAULT_KEYWORD } from '@/lib/scraper';
+import repositoryConfig from '@/config.json';
 
 const STORAGE_KEY_CONFIG = 'kkholiday_monitor_config_v3';
 const STORAGE_KEY_LOGS = 'kkholiday_monitor_logs_v3';
@@ -59,9 +60,9 @@ const initialConfig: MonitoringConfig = {
   lineChannelAccessToken: '',
   lineUserId: '',
   customWebhookUrl: '',
-  quietHoursEnabled: true,
-  quietStartHour: 23,
-  quietEndHour: 8,
+  quietHoursEnabled: repositoryConfig.quietHours.enabled,
+  quietStartHour: repositoryConfig.quietHours.startHour,
+  quietEndHour: repositoryConfig.quietHours.endHour,
 };
 
 export default function HomePage() {
