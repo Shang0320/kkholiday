@@ -1,7 +1,7 @@
 {
   "keyword": "ILN34",
   "quietHours": {
-    "enabled": true,
+    "enabled": false,
     "startHour": 23,
     "endHour": 8
   },
