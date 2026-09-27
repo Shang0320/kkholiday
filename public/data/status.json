@@ -1,7 +1,7 @@
 {
   "success": true,
-  "timestamp": "2026-09-27T14:17:36.028Z",
-  "previousTimestamp": null,
+  "timestamp": "2026-09-27T14:52:29.791Z",
+  "previousTimestamp": "2026-09-27T14:52:22.886Z",
   "sourceUrl": "https://www.kkholiday.com.tw/EW/GO/GroupList.asp?mGrupCd=ILN34",
   "notificationsConfigured": false,
   "slotResults": [
@@ -21,7 +21,7 @@
         "isGuaranteed": true,
         "orderUrl": "https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=ILN34261031A",
         "detailUrl": "https://www.kkholiday.com.tw/EW/GO/GroupDetail.asp?prodCd=ILN34261031A",
-        "updatedAt": "2026-09-27T14:17:37.700Z"
+        "updatedAt": "2026-09-27T14:52:31.607Z"
       },
       "targetDate": "2026/10/31 (六)",
       "targetCode": "ILN34261031A",
@@ -47,7 +47,7 @@
         "isGuaranteed": true,
         "orderUrl": "https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=ILN34261107A",
         "detailUrl": "https://www.kkholiday.com.tw/EW/GO/GroupDetail.asp?prodCd=ILN34261107A",
-        "updatedAt": "2026-09-27T14:17:37.700Z"
+        "updatedAt": "2026-09-27T14:52:31.607Z"
       },
       "targetDate": "2026/11/07 (六)",
       "targetCode": "ILN34261107A",
@@ -72,7 +72,7 @@
       "isGuaranteed": false,
       "orderUrl": "https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=ILN34261016A",
       "detailUrl": "https://www.kkholiday.com.tw/EW/GO/GroupDetail.asp?prodCd=ILN34261016A",
-      "updatedAt": "2026-09-27T14:17:37.698Z"
+      "updatedAt": "2026-09-27T14:52:31.606Z"
     },
     {
       "code": "ILN34261010A",
@@ -87,7 +87,7 @@
       "isGuaranteed": false,
       "orderUrl": "https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=ILN34261010A",
       "detailUrl": "https://www.kkholiday.com.tw/EW/GO/GroupDetail.asp?prodCd=ILN34261010A",
-      "updatedAt": "2026-09-27T14:17:37.699Z"
+      "updatedAt": "2026-09-27T14:52:31.607Z"
     },
     {
       "code": "ILN34261011A",
@@ -102,7 +102,7 @@
       "isGuaranteed": false,
       "orderUrl": "https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=ILN34261011A",
       "detailUrl": "https://www.kkholiday.com.tw/EW/GO/GroupDetail.asp?prodCd=ILN34261011A",
-      "updatedAt": "2026-09-27T14:17:37.699Z"
+      "updatedAt": "2026-09-27T14:52:31.607Z"
     },
     {
       "code": "ILN34261017A",
@@ -117,7 +117,7 @@
       "isGuaranteed": true,
       "orderUrl": "https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=ILN34261017A",
       "detailUrl": "https://www.kkholiday.com.tw/EW/GO/GroupDetail.asp?prodCd=ILN34261017A",
-      "updatedAt": "2026-09-27T14:17:37.699Z"
+      "updatedAt": "2026-09-27T14:52:31.607Z"
     },
     {
       "code": "ILN34261018A",
@@ -132,7 +132,7 @@
       "isGuaranteed": false,
       "orderUrl": "https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=ILN34261018A",
       "detailUrl": "https://www.kkholiday.com.tw/EW/GO/GroupDetail.asp?prodCd=ILN34261018A",
-      "updatedAt": "2026-09-27T14:17:37.700Z"
+      "updatedAt": "2026-09-27T14:52:31.607Z"
     },
     {
       "code": "ILN34261023A",
@@ -147,7 +147,7 @@
       "isGuaranteed": false,
       "orderUrl": "https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=ILN34261023A",
       "detailUrl": "https://www.kkholiday.com.tw/EW/GO/GroupDetail.asp?prodCd=ILN34261023A",
-      "updatedAt": "2026-09-27T14:17:37.700Z"
+      "updatedAt": "2026-09-27T14:52:31.607Z"
     },
     {
       "code": "ILN34261024A",
@@ -155,14 +155,14 @@
       "date": "2026/10/24 (六)",
       "days": "1天",
       "totalSeats": 39,
-      "availableSeats": 31,
+      "availableSeats": 26,
       "price": "1,899",
       "buttonText": "報名",
       "buttonType": "btn-success",
       "isGuaranteed": true,
       "orderUrl": "https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=ILN34261024A",
       "detailUrl": "https://www.kkholiday.com.tw/EW/GO/GroupDetail.asp?prodCd=ILN34261024A",
-      "updatedAt": "2026-09-27T14:17:37.700Z"
+      "updatedAt": "2026-09-27T14:52:31.607Z"
     },
     {
       "code": "ILN34261025A",
@@ -177,7 +177,7 @@
       "isGuaranteed": false,
       "orderUrl": "https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=ILN34261025A",
       "detailUrl": "https://www.kkholiday.com.tw/EW/GO/GroupDetail.asp?prodCd=ILN34261025A",
-      "updatedAt": "2026-09-27T14:17:37.700Z"
+      "updatedAt": "2026-09-27T14:52:31.607Z"
     },
     {
       "code": "ILN34261030A",
@@ -192,7 +192,7 @@
       "isGuaranteed": false,
       "orderUrl": "https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=ILN34261030A",
       "detailUrl": "https://www.kkholiday.com.tw/EW/GO/GroupDetail.asp?prodCd=ILN34261030A",
-      "updatedAt": "2026-09-27T14:17:37.700Z"
+      "updatedAt": "2026-09-27T14:52:31.607Z"
     },
     {
       "code": "ILN34261106A",
@@ -207,7 +207,7 @@
       "isGuaranteed": false,
       "orderUrl": "https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=ILN34261106A",
       "detailUrl": "https://www.kkholiday.com.tw/EW/GO/GroupDetail.asp?prodCd=ILN34261106A",
-      "updatedAt": "2026-09-27T14:17:37.700Z"
+      "updatedAt": "2026-09-27T14:52:31.607Z"
     },
     {
       "code": "ILN34261031A",
@@ -222,7 +222,7 @@
       "isGuaranteed": true,
       "orderUrl": "https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=ILN34261031A",
       "detailUrl": "https://www.kkholiday.com.tw/EW/GO/GroupDetail.asp?prodCd=ILN34261031A",
-      "updatedAt": "2026-09-27T14:17:37.700Z"
+      "updatedAt": "2026-09-27T14:52:31.607Z"
     },
     {
       "code": "ILN34261101A",
@@ -237,7 +237,7 @@
       "isGuaranteed": true,
       "orderUrl": "https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=ILN34261101A",
       "detailUrl": "https://www.kkholiday.com.tw/EW/GO/GroupDetail.asp?prodCd=ILN34261101A",
-      "updatedAt": "2026-09-27T14:17:37.700Z"
+      "updatedAt": "2026-09-27T14:52:31.607Z"
     },
     {
       "code": "ILN34261107A",
@@ -252,7 +252,7 @@
       "isGuaranteed": true,
       "orderUrl": "https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=ILN34261107A",
       "detailUrl": "https://www.kkholiday.com.tw/EW/GO/GroupDetail.asp?prodCd=ILN34261107A",
-      "updatedAt": "2026-09-27T14:17:37.700Z"
+      "updatedAt": "2026-09-27T14:52:31.607Z"
     },
     {
       "code": "ILN34261108A",
@@ -267,7 +267,7 @@
       "isGuaranteed": true,
       "orderUrl": "https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=ILN34261108A",
       "detailUrl": "https://www.kkholiday.com.tw/EW/GO/GroupDetail.asp?prodCd=ILN34261108A",
-      "updatedAt": "2026-09-27T14:17:37.700Z"
+      "updatedAt": "2026-09-27T14:52:31.607Z"
     },
     {
       "code": "ILN34261113A",
@@ -282,7 +282,7 @@
       "isGuaranteed": false,
       "orderUrl": "https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=ILN34261113A",
       "detailUrl": "https://www.kkholiday.com.tw/EW/GO/GroupDetail.asp?prodCd=ILN34261113A",
-      "updatedAt": "2026-09-27T14:17:37.700Z"
+      "updatedAt": "2026-09-27T14:52:31.607Z"
     },
     {
       "code": "ILN34261114A",
@@ -297,7 +297,7 @@
       "isGuaranteed": true,
       "orderUrl": "https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=ILN34261114A",
       "detailUrl": "https://www.kkholiday.com.tw/EW/GO/GroupDetail.asp?prodCd=ILN34261114A",
-      "updatedAt": "2026-09-27T14:17:37.700Z"
+      "updatedAt": "2026-09-27T14:52:31.607Z"
     },
     {
       "code": "ILN34261115A",
@@ -312,7 +312,7 @@
       "isGuaranteed": true,
       "orderUrl": "https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=ILN34261115A",
       "detailUrl": "https://www.kkholiday.com.tw/EW/GO/GroupDetail.asp?prodCd=ILN34261115A",
-      "updatedAt": "2026-09-27T14:17:37.700Z"
+      "updatedAt": "2026-09-27T14:52:31.607Z"
     },
     {
       "code": "ILN34261120A",
@@ -327,7 +327,7 @@
       "isGuaranteed": false,
       "orderUrl": "https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=ILN34261120A",
       "detailUrl": "https://www.kkholiday.com.tw/EW/GO/GroupDetail.asp?prodCd=ILN34261120A",
-      "updatedAt": "2026-09-27T14:17:37.700Z"
+      "updatedAt": "2026-09-27T14:52:31.607Z"
     },
     {
       "code": "ILN34261121A",
@@ -342,7 +342,7 @@
       "isGuaranteed": true,
       "orderUrl": "https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=ILN34261121A",
       "detailUrl": "https://www.kkholiday.com.tw/EW/GO/GroupDetail.asp?prodCd=ILN34261121A",
-      "updatedAt": "2026-09-27T14:17:37.700Z"
+      "updatedAt": "2026-09-27T14:52:31.607Z"
     },
     {
       "code": "ILN34261122A",
@@ -357,7 +357,7 @@
       "isGuaranteed": false,
       "orderUrl": "https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=ILN34261122A",
       "detailUrl": "https://www.kkholiday.com.tw/EW/GO/GroupDetail.asp?prodCd=ILN34261122A",
-      "updatedAt": "2026-09-27T14:17:37.700Z"
+      "updatedAt": "2026-09-27T14:52:31.608Z"
     }
   ]
 }

@@ -1,0 +1,39 @@
+name: Send Telegram Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_slot:
+        description: '要實測的監控梯次'
+        required: true
+        type: choice
+        default: slot_1
+        options:
+          - slot_1
+          - slot_2
+          - both
+
+permissions:
+  contents: read
+
+jobs:
+  send-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Send real Telegram test
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PREVIOUS_STATUS_URL: https://shang0320.github.io/kkholiday/data/status.json
+          SEND_TEST_TELEGRAM: 'true'
+          TEST_SLOT: ${{ inputs.test_slot }}
+        run: node scripts/monitor.js

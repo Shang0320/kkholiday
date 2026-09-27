@@ -365,7 +365,7 @@ export default function HomePage() {
       availableSeats: simulatedSeats,
       message: `【模擬測試】${targetSlot.label} (${targetSlot.targetDate}) 模擬名額釋出 ${simulatedSeats} 人，觸發警報`,
       notified: false,
-      notificationResult: '僅測試此手機的畫面、音效與瀏覽器通知，不會觸發 Telegram',
+      notificationResult: '手機模擬已完成；要真正發送 Telegram，請點「Telegram 實測」後執行 Run workflow',
     });
   };
 

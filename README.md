@@ -24,6 +24,10 @@ Telegram 憑證不得寫入原始碼。請在 GitHub 倉庫的 `Settings → Sec
 
 編輯 [`config.json`](./config.json) 可調整兩個梯次、通知門檻、比較方式與夜間靜音時段。網頁內切換梯次只影響目前手機上的檢視；Telegram 背景排程以 `config.json` 為準。
 
+## Telegram 實測
+
+在手機頁面點「Telegram 實測」，或開啟 GitHub Actions 的 `Send Telegram Test` 工作流程，選擇梯次後按 `Run workflow`。這個實測會略過名額門檻與夜間靜音，真正發送一則 Telegram 訊息。
+
 ## 本機驗證
 
 ```bash

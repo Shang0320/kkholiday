@@ -8,6 +8,8 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '';
 const PREVIOUS_STATUS_URL = process.env.PREVIOUS_STATUS_URL || '';
 const FORCE_NOTIFY = process.env.FORCE_NOTIFY === 'true';
+const SEND_TEST_TELEGRAM = process.env.SEND_TEST_TELEGRAM === 'true';
+const TEST_SLOT = process.env.TEST_SLOT || 'slot_1';
 
 async function fetchText(url) {
   const response = await fetch(url, {
@@ -96,9 +98,11 @@ function escapeHtml(value) {
   return String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }
 
-async function sendTelegram(result, checkedAt) {
+async function sendTelegram(result, checkedAt, { isTest = false } = {}) {
   const text = [
-    '🚨 <b>【KKHoliday 名額監控提醒】</b>',
+    isTest
+      ? '✅ <b>【KKHoliday Telegram 實測成功】</b>'
+      : '🚨 <b>【KKHoliday 名額監控提醒】</b>',
     `⏰ ${checkedAt.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}`,
     '══════════════════',
     `<b>${escapeHtml(result.label)}</b>`,
@@ -169,17 +173,31 @@ async function main() {
   const quiet = config.quietHours?.enabled !== false
     && (taipeiHour >= Number(config.quietHours?.startHour ?? 23) || taipeiHour < Number(config.quietHours?.endHour ?? 8));
 
-  for (const result of slotResults) {
-    const previousResult = previous?.slotResults?.find((item) => item.slotId === result.slotId);
-    const transitioned = result.isConditionMet && previousResult && !previousResult.isConditionMet;
-    if ((FORCE_NOTIFY && result.isConditionMet) || transitioned) {
-      if (!notificationsConfigured) {
-        console.warn(`Telegram Secrets not configured; skipped ${result.label}`);
-      } else if (quiet) {
-        console.log(`Quiet hours active; skipped Telegram for ${result.label}`);
-      } else {
-        await sendTelegram(result, checkedAt);
-        console.log(`Telegram sent for ${result.label}`);
+  if (SEND_TEST_TELEGRAM) {
+    if (!notificationsConfigured) {
+      throw new Error('Telegram test requested, but TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is missing');
+    }
+    const testResults = TEST_SLOT === 'both'
+      ? slotResults
+      : slotResults.filter((result) => result.slotId === TEST_SLOT);
+    if (testResults.length === 0) throw new Error(`Unknown TEST_SLOT: ${TEST_SLOT}`);
+    for (const result of testResults) {
+      await sendTelegram(result, checkedAt, { isTest: true });
+      console.log(`Telegram test sent for ${result.label}`);
+    }
+  } else {
+    for (const result of slotResults) {
+      const previousResult = previous?.slotResults?.find((item) => item.slotId === result.slotId);
+      const transitioned = result.isConditionMet && previousResult && !previousResult.isConditionMet;
+      if ((FORCE_NOTIFY && result.isConditionMet) || transitioned) {
+        if (!notificationsConfigured) {
+          console.warn(`Telegram Secrets not configured; skipped ${result.label}`);
+        } else if (quiet) {
+          console.log(`Quiet hours active; skipped Telegram for ${result.label}`);
+        } else {
+          await sendTelegram(result, checkedAt);
+          console.log(`Telegram sent for ${result.label}`);
+        }
       }
     }
   }
