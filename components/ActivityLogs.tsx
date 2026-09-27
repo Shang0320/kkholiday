@@ -70,7 +70,7 @@ export function ActivityLogs({ logs, onClearLogs }: ActivityLogsProps) {
                       <span>{log.message}</span>
                       {log.notified && (
                         <span className="text-2xs font-semibold text-white bg-emerald-700 px-1.5 py-0.5 rounded-sm">
-                          LINE 推播已送達
+                          Telegram 推播已送達
                         </span>
                       )}
                     </div>
