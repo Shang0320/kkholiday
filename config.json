@@ -1,0 +1,22 @@
+{
+  "keyword": "ILN34",
+  "quietHours": {
+    "enabled": true,
+    "startHour": 23,
+    "endHour": 8
+  },
+  "slots": [
+    {
+      "label": "監控行程 1 (目標主力)",
+      "targetDate": "2026/10/31 (六)",
+      "targetCode": "ILN34261031A",
+      "minSeats": 2
+    },
+    {
+      "label": "監控行程 2 (備選備案)",
+      "targetDate": "2026/10/24 (六)",
+      "targetCode": "ILN34261024A",
+      "minSeats": 2
+    }
+  ]
+}
