@@ -13,6 +13,11 @@ const TEST_SLOT = process.env.TEST_SLOT || 'slot_1';
 const SEND_AUTO_TELEGRAM = process.env.SEND_AUTO_TELEGRAM === 'true';
 const AUTO_NOTIFY_SLOT = process.env.AUTO_NOTIFY_SLOT || '';
 const AUTO_QUIET_HOURS_ENABLED = process.env.AUTO_QUIET_HOURS_ENABLED !== 'false';
+const AUTO_TARGET_CODE = process.env.AUTO_TARGET_CODE || '';
+const AUTO_TARGET_DATE = process.env.AUTO_TARGET_DATE || '';
+const AUTO_MIN_AVAILABLE_SEATS = process.env.AUTO_MIN_AVAILABLE_SEATS || '';
+const AUTO_COMPARISON_OPERATOR = process.env.AUTO_COMPARISON_OPERATOR || '';
+const AUTO_SLOT_LABEL = process.env.AUTO_SLOT_LABEL || '';
 
 async function fetchText(url) {
   const response = await fetch(url, {
@@ -140,15 +145,23 @@ async function main() {
   const allGroups = parseKKHolidayHtml(html);
   if (allGroups.length === 0) throw new Error('KKHoliday 頁面格式可能已變更：未解析到任何梯次');
 
-  const slots = (config.slots || []).map((slot, index) => ({
-    id: slot.id || `slot_${index + 1}`,
-    label: slot.label || `監控行程${index + 1}`,
-    targetDate: slot.targetDate,
-    targetCode: slot.targetCode,
-    minAvailableSeats: Number(slot.minAvailableSeats ?? slot.minSeats ?? 1),
-    comparisonOperator: slot.comparisonOperator || '>=',
-    enabled: slot.enabled !== false,
-  }));
+  const slots = (config.slots || []).map((slot, index) => {
+    const id = slot.id || `slot_${index + 1}`;
+    const useBrowserSettings = SEND_AUTO_TELEGRAM && id === AUTO_NOTIFY_SLOT;
+    return {
+      id,
+      label: useBrowserSettings && AUTO_SLOT_LABEL ? AUTO_SLOT_LABEL : slot.label || `監控行程${index + 1}`,
+      targetDate: useBrowserSettings && AUTO_TARGET_DATE ? AUTO_TARGET_DATE : slot.targetDate,
+      targetCode: useBrowserSettings && AUTO_TARGET_CODE ? AUTO_TARGET_CODE : slot.targetCode,
+      minAvailableSeats: Number(useBrowserSettings && AUTO_MIN_AVAILABLE_SEATS
+        ? AUTO_MIN_AVAILABLE_SEATS
+        : slot.minAvailableSeats ?? slot.minSeats ?? 1),
+      comparisonOperator: useBrowserSettings && AUTO_COMPARISON_OPERATOR
+        ? AUTO_COMPARISON_OPERATOR
+        : slot.comparisonOperator || '>=',
+      enabled: slot.enabled !== false,
+    };
+  });
 
   const slotResults = slots.map((slot) => {
     const targetGroup = allGroups.find((group) => group.code.toUpperCase() === slot.targetCode.toUpperCase())

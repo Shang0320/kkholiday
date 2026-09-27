@@ -296,6 +296,11 @@ export default function HomePage() {
                 {
                   alert_slot: slot.id,
                   quiet_hours_enabled: String(current.quietHoursEnabled),
+                  target_code: slot.targetCode,
+                  target_date: slot.targetDate,
+                  min_available_seats: String(slot.minAvailableSeats),
+                  comparison_operator: slot.comparisonOperator || '>=',
+                  slot_label: slot.label,
                 },
                 githubToken,
               ).then(() => {

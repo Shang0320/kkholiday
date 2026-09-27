@@ -16,6 +16,26 @@ on:
         required: true
         type: boolean
         default: true
+      target_code:
+        description: 'Group code selected on the phone'
+        required: true
+        type: string
+      target_date:
+        description: 'Departure date selected on the phone'
+        required: true
+        type: string
+      min_available_seats:
+        description: 'Threshold selected on the phone'
+        required: true
+        type: string
+      comparison_operator:
+        description: 'Comparison operator selected on the phone'
+        required: true
+        type: string
+      slot_label:
+        description: 'Slot label shown on the phone'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -41,4 +61,9 @@ jobs:
           SEND_AUTO_TELEGRAM: 'true'
           AUTO_NOTIFY_SLOT: ${{ inputs.alert_slot }}
           AUTO_QUIET_HOURS_ENABLED: ${{ inputs.quiet_hours_enabled }}
+          AUTO_TARGET_CODE: ${{ inputs.target_code }}
+          AUTO_TARGET_DATE: ${{ inputs.target_date }}
+          AUTO_MIN_AVAILABLE_SEATS: ${{ inputs.min_available_seats }}
+          AUTO_COMPARISON_OPERATOR: ${{ inputs.comparison_operator }}
+          AUTO_SLOT_LABEL: ${{ inputs.slot_label }}
         run: node scripts/monitor.js
