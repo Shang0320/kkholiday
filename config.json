@@ -7,16 +7,22 @@
   },
   "slots": [
     {
-      "label": "監控行程 1 (目標主力)",
+      "id": "slot_1",
+      "label": "監控行程1",
       "targetDate": "2026/10/31 (六)",
       "targetCode": "ILN34261031A",
-      "minSeats": 2
+      "minAvailableSeats": 2,
+      "comparisonOperator": ">=",
+      "enabled": true
     },
     {
-      "label": "監控行程 2 (備選備案)",
-      "targetDate": "2026/10/24 (六)",
-      "targetCode": "ILN34261024A",
-      "minSeats": 2
+      "id": "slot_2",
+      "label": "監控行程2",
+      "targetDate": "2026/11/07 (六)",
+      "targetCode": "ILN34261107A",
+      "minAvailableSeats": 8,
+      "comparisonOperator": ">=",
+      "enabled": true
     }
   ]
 }

@@ -16,9 +16,6 @@ export interface TourGroup {
 
 export type NotificationChannel = 'telegram' | 'line_messaging' | 'webhook';
 
-export const DEFAULT_TELEGRAM_BOT_TOKEN = '8887558205:AAGwaaNTJRx3DnPncPFvoLzWN7TJiFZ2_4o';
-export const DEFAULT_TELEGRAM_CHAT_ID = '1177409998';
-
 export interface MonitoredSlot {
   id: string; // e.g. 'slot_1', 'slot_2'
   label: string; // e.g. '監控行程1', '監控行程2'
@@ -39,10 +36,10 @@ export interface MonitoringConfig {
   // Multi-slot monitoring (Supports 2 target groups simultaneously)
   slots: MonitoredSlot[];
 
-  // Primary: Telegram Bot Configuration (Hardcoded default)
+  // Telegram credentials live only in GitHub Actions Secrets.
   channel: NotificationChannel;
-  telegramBotToken: string;
-  telegramChatId: string;
+  telegramBotToken?: string;
+  telegramChatId?: string;
 
   // Secondary alternatives
   lineChannelAccessToken: string;
@@ -87,4 +84,6 @@ export interface CheckResponse {
   allGroups: TourGroup[];
   sourceUrl: string;
   error?: string;
+  notificationsConfigured?: boolean;
+  previousTimestamp?: string | null;
 }

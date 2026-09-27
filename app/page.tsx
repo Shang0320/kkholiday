@@ -14,18 +14,17 @@ import {
   CheckResponse,
   MonitoredSlot,
   SlotStatusResult,
-  DEFAULT_TELEGRAM_BOT_TOKEN,
-  DEFAULT_TELEGRAM_CHAT_ID,
 } from '@/lib/types';
 import { playAlertChime } from '@/lib/audio';
 import { DEFAULT_TARGET_DATE, DEFAULT_TARGET_CODE, DEFAULT_KEYWORD } from '@/lib/scraper';
 
 const STORAGE_KEY_CONFIG = 'kkholiday_monitor_config_v3';
 const STORAGE_KEY_LOGS = 'kkholiday_monitor_logs_v3';
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
 // Default configuration with 2 target groups:
 // Slot 1: 監控行程1 (首選 2026/10/31 週六)
-// Slot 2: 監控行程2 (備選 2026/10/24 週六)
+// Slot 2: 監控行程2 (備選 2026/11/07 週六)
 const initialSlots: MonitoredSlot[] = [
   {
     id: 'slot_1',
@@ -39,10 +38,10 @@ const initialSlots: MonitoredSlot[] = [
   {
     id: 'slot_2',
     label: '監控行程2',
-    targetDate: '2026/10/24 (六)',
-    targetCode: 'ILN34261024A',
-    minAvailableSeats: 5,
-    comparisonOperator: '<=', // condition: available <= 5 (提醒即將搶光)
+    targetDate: '2026/11/07 (六)',
+    targetCode: 'ILN34261107A',
+    minAvailableSeats: 8,
+    comparisonOperator: '>=',
     enabled: true,
   },
 ];
@@ -55,8 +54,8 @@ const initialConfig: MonitoringConfig = {
   browserNotifyEnabled: false,
   slots: initialSlots,
   channel: 'telegram',
-  telegramBotToken: DEFAULT_TELEGRAM_BOT_TOKEN,
-  telegramChatId: DEFAULT_TELEGRAM_CHAT_ID,
+  telegramBotToken: '',
+  telegramChatId: '',
   lineChannelAccessToken: '',
   lineUserId: '',
   customWebhookUrl: '',
@@ -66,57 +65,40 @@ const initialConfig: MonitoringConfig = {
 };
 
 export default function HomePage() {
-  const [config, setConfig] = useState<MonitoringConfig>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const savedCfg = localStorage.getItem(STORAGE_KEY_CONFIG);
-        if (savedCfg) {
-          const parsed = JSON.parse(savedCfg);
-          if (Array.isArray(parsed.slots) && parsed.slots.length >= 2) {
-            return {
-              ...initialConfig,
-              ...parsed,
-              telegramBotToken: DEFAULT_TELEGRAM_BOT_TOKEN,
-              telegramChatId: DEFAULT_TELEGRAM_CHAT_ID,
-            };
-          }
-        }
-      } catch (e) {
-        console.warn('Failed to load saved config:', e);
-      }
-    }
-    return initialConfig;
-  });
+  const [config, setConfig] = useState<MonitoringConfig>(initialConfig);
 
   const [slotResults, setSlotResults] = useState<SlotStatusResult[]>([]);
   const [allGroups, setAllGroups] = useState<TourGroup[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [lastCheckedTime, setLastCheckedTime] = useState<string | null>(null);
-  const [logs, setLogs] = useState<CheckLog[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const savedLogs = localStorage.getItem(STORAGE_KEY_LOGS);
-        if (savedLogs) {
-          return JSON.parse(savedLogs);
-        }
-      } catch (e) {
-        console.warn('Failed to load saved logs:', e);
-      }
-    }
-    return [];
-  });
+  const [logs, setLogs] = useState<CheckLog[]>([]);
 
   const [countdown, setCountdown] = useState<number>(30);
-  const [browserPermission, setBrowserPermission] = useState<NotificationPermission | 'default'>(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      return Notification.permission;
-    }
-    return 'default';
-  });
+  const [browserPermission, setBrowserPermission] = useState<NotificationPermission | 'default'>('default');
 
   // Track each slot's previous condition to prevent repetitive alert flooding
   const prevConditionMetMapRef = useRef<Record<string, boolean>>({});
   const configRef = useRef(config);
+
+  /* Browser-only persistence is intentionally restored after hydration. */
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    try {
+      const savedCfg = localStorage.getItem(STORAGE_KEY_CONFIG);
+      if (savedCfg) {
+        const parsed = JSON.parse(savedCfg);
+        if (Array.isArray(parsed.slots) && parsed.slots.length >= 2) {
+          setConfig({ ...initialConfig, ...parsed, telegramBotToken: '', telegramChatId: '' });
+        }
+      }
+      const savedLogs = localStorage.getItem(STORAGE_KEY_LOGS);
+      if (savedLogs) setLogs(JSON.parse(savedLogs));
+      if ('Notification' in window) setBrowserPermission(Notification.permission);
+    } catch (error) {
+      console.warn('Failed to restore browser settings:', error);
+    }
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     configRef.current = config;
@@ -160,71 +142,50 @@ export default function HomePage() {
     });
   }, []);
 
-  // Perform a check against KKHoliday website for both slots
+  // GitHub Actions refreshes this static snapshot before each Pages deployment.
   const executeCheck = useCallback(async (isManual = false) => {
     setIsLoading(true);
     const nowTimeStr = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
 
-    // Retry helper with timeout
-    const fetchWithRetry = async (retries = 2): Promise<Response> => {
-      const current = configRef.current;
-      for (let attempt = 0; attempt <= retries; attempt++) {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 12000);
-        try {
-          const res = await fetch('/api/monitor/check', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              keyword: current.targetKeyword,
-              slots: current.slots,
-            }),
-            signal: controller.signal,
-          });
-          clearTimeout(timeoutId);
-          if (res.ok) return res;
-          // If 5xx, wait briefly and retry
-          if (attempt < retries) {
-            await new Promise((r) => setTimeout(r, 1000));
-          }
-        } catch (e) {
-          clearTimeout(timeoutId);
-          if (attempt >= retries) throw e;
-          await new Promise((r) => setTimeout(r, 1000));
-        }
-      }
-      throw new Error('網路短暫不穩，已自動重試');
-    };
-
     try {
       const current = configRef.current;
-      const res = await fetchWithRetry(2);
+      const res = await fetch(`${BASE_PATH}/data/status.json?t=${Date.now()}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`GitHub Pages 資料讀取失敗 (${res.status})`);
       const data: CheckResponse = await res.json();
 
-      if (data.success && Array.isArray(data.slotResults)) {
-        setSlotResults(data.slotResults);
-        setAllGroups(data.allGroups || []);
-        setLastCheckedTime(nowTimeStr);
-
-        // Prepare structured slots info for the push notification
-        const slotsInfo = current.slots.map((slot) => {
-          const r = data.slotResults.find((resItem) => resItem.slotId === slot.id);
+      if (data.success && Array.isArray(data.allGroups)) {
+        const groups = data.allGroups;
+        const derivedResults: SlotStatusResult[] = current.slots.map((slot) => {
+          const targetGroup = groups.find((group) => group.code === slot.targetCode)
+            || groups.find((group) => group.date.includes(slot.targetDate.split(' ')[0]))
+            || null;
+          const availableSeats = targetGroup?.availableSeats ?? 0;
+          const operator = slot.comparisonOperator || '>=';
+          const isConditionMet = Boolean(targetGroup && slot.enabled && (
+            operator === '<=' ? availableSeats > 0 && availableSeats <= slot.minAvailableSeats
+              : operator === '<' ? availableSeats > 0 && availableSeats < slot.minAvailableSeats
+                : operator === '>' ? availableSeats > slot.minAvailableSeats
+                  : availableSeats >= slot.minAvailableSeats
+          ));
           return {
-            label: slot.label,
-            name: r?.targetGroup?.name || '太平山 山毛櫸一日遊',
-            date: slot.targetDate,
-            code: slot.targetCode,
-            minSeats: slot.minAvailableSeats,
-            comparisonOperator: slot.comparisonOperator || (slot.minAvailableSeats >= 2 ? '>=' : '>'),
-            availableSeats: r?.availableSeats ?? 0,
-            totalSeats: r?.targetGroup?.totalSeats || 39,
-            orderUrl: r?.orderUrl || `https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=${slot.targetCode}`,
-            isTriggered: !!r?.isConditionMet,
+            slotId: slot.id,
+            targetGroup,
+            targetDate: slot.targetDate,
+            targetCode: slot.targetCode,
+            minAvailableSeats: slot.minAvailableSeats,
+            comparisonOperator: operator,
+            availableSeats,
+            isConditionMet,
+            orderUrl: targetGroup?.orderUrl || `https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=${slot.targetCode}`,
           };
         });
 
+        setSlotResults(derivedResults);
+        setAllGroups(groups);
+        setLastCheckedTime(new Date(data.timestamp).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }));
+
         // Check conditions for each slot
-        for (const result of data.slotResults) {
+        for (const result of derivedResults) {
           const slot = current.slots.find((s) => s.id === result.slotId);
           if (!slot || !slot.enabled) continue;
 
@@ -252,50 +213,11 @@ export default function HomePage() {
               try {
                 new Notification(`🚨 ${logTitle} (${slot.label})`, {
                   body: `${result.targetDate} 目前僅剩 ${result.availableSeats} 人（符合 ${opSymbol} ${slot.minAvailableSeats} 人），請把握最後機會搶位！`,
-                  icon: '/images/taipingshan_hero.jpg',
+                  icon: `${BASE_PATH}/images/taipingshan_hero.jpg`,
                 });
               } catch (err) {
                 console.warn('Notification error:', err);
               }
-            }
-
-            // Telegram / Webhook Push
-            let notificationSent = false;
-            let notifyMsg = '';
-
-            try {
-              const notifyRes = await fetch('/api/notify/line', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  channel: current.channel,
-                  telegramBotToken: current.telegramBotToken || DEFAULT_TELEGRAM_BOT_TOKEN,
-                  telegramChatId: current.telegramChatId || DEFAULT_TELEGRAM_CHAT_ID,
-                  lineChannelAccessToken: current.lineChannelAccessToken,
-                  lineUserId: current.lineUserId,
-                  webhookUrl: current.customWebhookUrl,
-                  isTest: false,
-                  tourName: result.targetGroup?.name || '太平山 山毛櫸一日遊（ILN34）',
-                  targetDate: result.targetDate,
-                  availableSeats: result.availableSeats,
-                  totalSeats: result.targetGroup?.totalSeats || 39,
-                  orderUrl: result.orderUrl,
-                  triggeredSlotLabel: slot.label,
-                  slotsInfo,
-                  quietHoursEnabled: current.quietHoursEnabled ?? true,
-                  quietStartHour: current.quietStartHour ?? 23,
-                  quietEndHour: current.quietEndHour ?? 8,
-                }),
-              });
-              const notifyData = await notifyRes.json();
-              if (notifyRes.ok && notifyData.success) {
-                notificationSent = true;
-                notifyMsg = `已成功推播至 ${notifyData.channel}`;
-              } else {
-                notifyMsg = `推播失敗: ${notifyData.error}`;
-              }
-            } catch (err) {
-              notifyMsg = `推播請求異常: ${err instanceof Error ? err.message : '連線錯誤'}`;
             }
 
             addLog({
@@ -306,8 +228,10 @@ export default function HomePage() {
               slotLabel: slot.label,
               availableSeats: result.availableSeats,
               message: `${logTitle}${slot.label} (${result.targetDate}) 可售名額為 ${result.availableSeats} 人（符合 ${opSymbol} ${slot.minAvailableSeats} 人，請快點搶票！）`,
-              notified: notificationSent,
-              notificationResult: notifyMsg,
+              notified: Boolean(data.notificationsConfigured),
+              notificationResult: data.notificationsConfigured
+                ? 'Telegram 由 GitHub Actions 背景排程處理'
+                : '尚未設定 GitHub Actions Secrets',
             });
           }
 
@@ -315,9 +239,9 @@ export default function HomePage() {
         }
 
         // Summary log if no alerts triggered
-        const anyMet = data.slotResults.some((r) => r.isConditionMet);
+        const anyMet = derivedResults.some((r) => r.isConditionMet);
         if (!anyMet && isManual) {
-          const summaryStr = data.slotResults
+          const summaryStr = derivedResults
             .map((r, i) => `行程${i + 1}(${r.targetDate.split(' ')[0]}): 可售 ${r.availableSeats} 人`)
             .join(' | ');
           addLog({
@@ -342,9 +266,7 @@ export default function HomePage() {
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : '連線逾時';
       // If error occurred during background automatic reload/server redeploy, present clear explanation
-      const friendlyMsg = errMsg.includes('Failed to fetch')
-        ? '雲端服務正重新載入，已啟用自動重試機制保護'
-        : `連線暫時波動: ${errMsg}，下個週期將自動重新嘗試`;
+      const friendlyMsg = `GitHub Pages 資料暫時無法更新：${errMsg}`;
 
       addLog({
         timestamp: nowTimeStr,
@@ -362,7 +284,7 @@ export default function HomePage() {
 
   // Request browser desktop notification permission
   const requestBrowserNotification = async (): Promise<boolean> => {
-    if (typeof window !== 'undefined' || !('Notification' in window)) {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
       alert('您的瀏覽器不支援桌面推播功能');
       return false;
     }
@@ -427,60 +349,11 @@ export default function HomePage() {
       try {
         new Notification(`🚨【模擬測試】KKHoliday 名額釋出！(${targetSlot.label})`, {
           body: `${targetSlot.targetDate} 模擬名額釋出: ${simulatedSeats} 人，請立即搶位！`,
-          icon: '/images/taipingshan_hero.jpg',
+          icon: `${BASE_PATH}/images/taipingshan_hero.jpg`,
         });
       } catch (e) {
         console.warn('Simulated notification error:', e);
       }
-    }
-
-    // Construct simulated slotsInfo
-    const simulatedSlotsInfo = config.slots.map((s) => ({
-      label: s.label,
-      name: '太平山 山毛櫸一日遊',
-      date: s.targetDate,
-      code: s.targetCode,
-      minSeats: s.minAvailableSeats,
-      comparisonOperator: s.comparisonOperator || (s.minAvailableSeats >= 2 ? '>=' : '>'),
-      availableSeats: s.id === slotId ? simulatedSeats : 0,
-      totalSeats: 39,
-      orderUrl: `https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=${s.targetCode}`,
-      isTriggered: s.id === slotId,
-    }));
-
-    let notifyResult = '模擬觸發本地警報';
-    let isNotified = false;
-
-    try {
-      const notifyRes = await fetch('/api/notify/line', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          channel: config.channel,
-          telegramBotToken: config.telegramBotToken || DEFAULT_TELEGRAM_BOT_TOKEN,
-          telegramChatId: config.telegramChatId || DEFAULT_TELEGRAM_CHAT_ID,
-          lineChannelAccessToken: config.lineChannelAccessToken,
-          lineUserId: config.lineUserId,
-          webhookUrl: config.customWebhookUrl,
-          isTest: false,
-          tourName: '太平山 山毛櫸一日遊',
-          targetDate: targetSlot.targetDate,
-          availableSeats: simulatedSeats,
-          totalSeats: 39,
-          orderUrl: `https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=${targetSlot.targetCode}`,
-          triggeredSlotLabel: targetSlot.label,
-          slotsInfo: simulatedSlotsInfo,
-        }),
-      });
-      const notifyData = await notifyRes.json();
-      if (notifyRes.ok && notifyData.success) {
-        notifyResult = `已成功傳送分段格式訊息至 Telegram (${notifyData.channel})`;
-        isNotified = true;
-      } else {
-        notifyResult = `發送失敗: ${notifyData.error}`;
-      }
-    } catch (e) {
-      notifyResult = `發送出錯: ${e instanceof Error ? e.message : '連線異常'}`;
     }
 
     addLog({
@@ -491,8 +364,8 @@ export default function HomePage() {
       slotLabel: targetSlot.label,
       availableSeats: simulatedSeats,
       message: `【模擬測試】${targetSlot.label} (${targetSlot.targetDate}) 模擬名額釋出 ${simulatedSeats} 人，觸發警報`,
-      notified: isNotified,
-      notificationResult: notifyResult,
+      notified: false,
+      notificationResult: '僅測試此手機的畫面、音效與瀏覽器通知，不會觸發 Telegram',
     });
   };
 
@@ -621,7 +494,7 @@ export default function HomePage() {
             <span>資料來源：KKHoliday 官方網站</span>
             <span aria-hidden="true">·</span>
             <a
-              href="https://www.kkholiday.com.tw/EW/GO/GroupList.asp?isWm=1&ikeyword=ILN34"
+              href="https://www.kkholiday.com.tw/EW/GO/GroupList.asp?mGrupCd=ILN34"
               target="_blank"
               rel="noopener noreferrer"
               className="text-stone-600 hover:text-sky-700 underline"

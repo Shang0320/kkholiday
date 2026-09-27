@@ -6,7 +6,7 @@ export const DEFAULT_TARGET_CODE = 'ILN34261031A';
 export const TARGET_BASE_URL = 'https://www.kkholiday.com.tw';
 
 export async function fetchKKHolidayGroups(keyword: string = DEFAULT_KEYWORD): Promise<TourGroup[]> {
-  const url = `${TARGET_BASE_URL}/EW/GO/GroupList.asp?isWm=1&ikeyword=${encodeURIComponent(keyword)}`;
+  const url = `${TARGET_BASE_URL}/EW/GO/GroupList.asp?mGrupCd=${encodeURIComponent(keyword)}`;
 
   const response = await fetch(url, {
     method: 'GET',

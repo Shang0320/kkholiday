@@ -1,47 +1,26 @@
-import https from 'https';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
-// Configuration
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8887558205:AAGwaaNTJRx3DnPncPFvoLzWN7TJiFZ2_4o';
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '1177409998';
-const KEYWORD = 'ILN34';
-const QUIET_HOURS_ENABLED = process.env.QUIET_HOURS_ENABLED !== 'false'; // default true
-const QUIET_START_HOUR = 23; // 23:00
-const QUIET_END_HOUR = 8;    // 08:00
+const SOURCE_URL = 'https://www.kkholiday.com.tw/EW/GO/GroupList.asp?mGrupCd=ILN34';
+const CONFIG_PATH = path.join(process.cwd(), 'config.json');
+const STATUS_PATH = path.join(process.cwd(), 'public', 'data', 'status.json');
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '';
+const PREVIOUS_STATUS_URL = process.env.PREVIOUS_STATUS_URL || '';
+const FORCE_NOTIFY = process.env.FORCE_NOTIFY === 'true';
 
-// Monitored target slots
-const SLOTS = [
-  {
-    id: 'slot_1',
-    label: '監控行程1',
-    targetDate: '2026/10/31 (六)',
-    targetCode: 'ILN34261031A',
-    minSeats: 2,
-    comparisonOperator: '>=',
-  },
-  {
-    id: 'slot_2',
-    label: '監控行程2',
-    targetDate: '2026/10/24 (六)',
-    targetCode: 'ILN34261024A',
-    minSeats: 2,
-    comparisonOperator: '>=',
-  },
-];
-
-function fetchUrl(url) {
-  return new Promise((resolve, reject) => {
-    https.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7',
-      },
-    }, (res) => {
-      let data = '';
-      res.on('data', (chunk) => { data += chunk; });
-      res.on('end', () => resolve(data));
-    }).on('error', reject);
+async function fetchText(url) {
+  const response = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (GitHub Actions; KKHoliday seat monitor)',
+      Accept: 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'zh-TW,zh;q=0.9,en;q=0.7',
+      'Cache-Control': 'no-cache',
+    },
+    redirect: 'follow',
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
+  return response.text();
 }
 
 function parseKKHolidayHtml(html) {
@@ -60,125 +39,167 @@ function parseKKHolidayHtml(html) {
 
     const dateMatch = block.match(/class="product_date[^"]*">([^<]+)<\/div>/);
     const totalMatch = block.match(/class="product_total"[^>]*>[\s\S]*?class="number">(\d+)<\/span>/);
-    const availMatch = block.match(/class="product_available"[^>]*>[\s\S]*?class="number">(\d+)<\/span>/);
+    const availableMatch = block.match(/class="product_available"[^>]*>[\s\S]*?class="number">(\d+)<\/span>/);
+    const priceMatch = block.match(/class="product_price"[^>]*>[\s\S]*?<strong>([^<]+)<\/strong>/);
+    const buttonMatch = block.match(/class=['"]btn (btn-[a-z0-9_-]+)['"][^>]*>([^<]+)<\/a>/);
+    const daysMatch = block.match(/class="product_days">([^<]+)<\/div>/);
     const nameMatch = block.match(/class="product_num">[^<]+<\/span>\s*([^<\n\r]+)/);
+    const availableSeats = availableMatch ? Number.parseInt(availableMatch[1], 10) : 0;
 
     items.push({
       code,
       name: nameMatch ? nameMatch[1].trim() : '太平山 山毛櫸一日遊',
       date: dateMatch ? dateMatch[1].trim() : '',
-      totalSeats: totalMatch ? parseInt(totalMatch[1], 10) : 39,
-      availableSeats: availMatch ? parseInt(availMatch[1], 10) : 0,
+      days: daysMatch ? daysMatch[1].trim() : '1天',
+      totalSeats: totalMatch ? Number.parseInt(totalMatch[1], 10) : 39,
+      availableSeats,
+      price: priceMatch ? priceMatch[1].trim() : '',
+      buttonText: buttonMatch ? buttonMatch[2].trim() : availableSeats > 0 ? '報名' : '候補',
+      buttonType: buttonMatch ? buttonMatch[1] : availableSeats > 0 ? 'btn-success' : 'btn-warning',
+      isGuaranteed: block.includes('保證出團'),
       orderUrl: `https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=${code}`,
+      detailUrl: `https://www.kkholiday.com.tw/EW/GO/GroupDetail.asp?prodCd=${code}`,
+      updatedAt: new Date().toISOString(),
     });
   }
 
-  return items;
+  return items.sort((a, b) => a.date.localeCompare(b.date));
 }
 
-async function sendTelegramMessage(text, inlineUrl) {
-  const payload = JSON.stringify({
-    chat_id: TELEGRAM_CHAT_ID,
-    text,
-    parse_mode: 'HTML',
-    reply_markup: {
-      inline_keyboard: [
-        [{ text: '⚡ 立即前往 KKHoliday 官方報名搶位', url: inlineUrl }],
-      ],
-    },
-  });
-
-  return new Promise((resolve) => {
-    const req = https.request({
-      hostname: 'api.telegram.org',
-      path: `/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(payload),
-      },
-    }, (res) => {
-      let body = '';
-      res.on('data', (d) => { body += d; });
-      res.on('end', () => {
-        try {
-          const json = JSON.parse(body);
-          resolve(json.ok === true);
-        } catch {
-          resolve(false);
-        }
-      });
-    });
-
-    req.on('error', () => resolve(false));
-    req.write(payload);
-    req.end();
-  });
+function conditionMet(slot, availableSeats, found) {
+  if (!slot.enabled || !found) return false;
+  const threshold = Number(slot.minAvailableSeats ?? slot.minSeats ?? 1);
+  const operator = slot.comparisonOperator || '>=';
+  if (operator === '<=') return availableSeats > 0 && availableSeats <= threshold;
+  if (operator === '<') return availableSeats > 0 && availableSeats < threshold;
+  if (operator === '>') return availableSeats > threshold;
+  return availableSeats >= threshold;
 }
 
-async function run() {
-  console.log('🚀 開始執行 KKHoliday 雙梯次名額檢查...');
-  const now = new Date();
-  const taipeiTimeStr = now.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
-  const taipeiHourStr = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Taipei',
-    hour: 'numeric',
-    hour12: false,
-  }).format(now);
-  const currentHour = parseInt(taipeiHourStr, 10);
-
-  // Check Quiet Hours (23:00 ~ 08:00)
-  const isQuietTime = currentHour >= QUIET_START_HOUR || currentHour < QUIET_END_HOUR;
-  if (QUIET_HOURS_ENABLED && isQuietTime) {
-    console.log(`🌙 目前為台灣時間免打擾時段 (${currentHour}:00)，僅執行排程巡檢，不發送即時推播打擾。`);
+async function readPreviousStatus() {
+  if (PREVIOUS_STATUS_URL) {
+    try {
+      const response = await fetch(`${PREVIOUS_STATUS_URL}?t=${Date.now()}`, { cache: 'no-store' });
+      if (response.ok) return response.json();
+    } catch (error) {
+      console.warn(`Previous Pages snapshot unavailable: ${error.message}`);
+    }
   }
+  try {
+    return JSON.parse(await fs.readFile(STATUS_PATH, 'utf8'));
+  } catch {
+    return null;
+  }
+}
 
-  const url = `https://www.kkholiday.com.tw/EW/GO/GroupList.asp?isWm=1&ikeyword=${encodeURIComponent(KEYWORD)}`;
-  const html = await fetchUrl(url);
-  const groups = parseKKHolidayHtml(html);
-  console.log(`✅ 成功抓取 KKHoliday 共 ${groups.length} 筆團次資料。`);
+function escapeHtml(value) {
+  return String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+}
 
-  let shouldAlert = false;
-  let triggeredSlot = null;
+async function sendTelegram(result, checkedAt) {
+  const text = [
+    '🚨 <b>【KKHoliday 名額監控提醒】</b>',
+    `⏰ ${checkedAt.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}`,
+    '══════════════════',
+    `<b>${escapeHtml(result.label)}</b>`,
+    `梯次：${escapeHtml(result.targetDate)}`,
+    `團號：${escapeHtml(result.targetCode)}`,
+    `可售名額：<b>${result.availableSeats} 人</b>`,
+    `條件：${escapeHtml(result.comparisonOperator)} ${result.minAvailableSeats} 人`,
+    '══════════════════',
+    `<a href="${result.orderUrl}"><b>立即前往官方報名</b></a>`,
+  ].join('\n');
 
-  for (const slot of SLOTS) {
-    const matched = groups.find((g) => g.code.toUpperCase() === slot.targetCode.toUpperCase())
-      || groups.find((g) => g.date.includes(slot.targetDate.split(' ')[0]));
-    const available = matched ? matched.availableSeats : 0;
-    console.log(`📌 [${slot.label}] ${slot.targetDate} (${slot.targetCode}) 可售: ${available} 人 (條件: >= ${slot.minSeats})`);
+  const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: TELEGRAM_CHAT_ID,
+      text,
+      parse_mode: 'HTML',
+      disable_web_page_preview: false,
+      reply_markup: { inline_keyboard: [[{ text: '⚡ 立即前往 KKHoliday 官方報名', url: result.orderUrl }]] },
+    }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload.ok) throw new Error(payload.description || `Telegram HTTP ${response.status}`);
+}
 
-    if (available >= slot.minSeats) {
-      shouldAlert = true;
-      if (!triggeredSlot) triggeredSlot = { slot, matched, available };
+async function main() {
+  const checkedAt = new Date();
+  const config = JSON.parse(await fs.readFile(CONFIG_PATH, 'utf8'));
+  const previous = await readPreviousStatus();
+  const html = await fetchText(SOURCE_URL);
+  const allGroups = parseKKHolidayHtml(html);
+  if (allGroups.length === 0) throw new Error('KKHoliday 頁面格式可能已變更：未解析到任何梯次');
+
+  const slots = (config.slots || []).map((slot, index) => ({
+    id: slot.id || `slot_${index + 1}`,
+    label: slot.label || `監控行程${index + 1}`,
+    targetDate: slot.targetDate,
+    targetCode: slot.targetCode,
+    minAvailableSeats: Number(slot.minAvailableSeats ?? slot.minSeats ?? 1),
+    comparisonOperator: slot.comparisonOperator || '>=',
+    enabled: slot.enabled !== false,
+  }));
+
+  const slotResults = slots.map((slot) => {
+    const targetGroup = allGroups.find((group) => group.code.toUpperCase() === slot.targetCode.toUpperCase())
+      || allGroups.find((group) => group.date.includes(slot.targetDate.split(' ')[0]))
+      || null;
+    const availableSeats = targetGroup?.availableSeats ?? 0;
+    return {
+      slotId: slot.id,
+      label: slot.label,
+      targetGroup,
+      targetDate: slot.targetDate,
+      targetCode: slot.targetCode,
+      minAvailableSeats: slot.minAvailableSeats,
+      comparisonOperator: slot.comparisonOperator,
+      availableSeats,
+      isConditionMet: conditionMet(slot, availableSeats, Boolean(targetGroup)),
+      orderUrl: targetGroup?.orderUrl || `https://www.kkholiday.com.tw/EW/GO/GroupOrder.asp?prodCd=${slot.targetCode}`,
+    };
+  });
+
+  const notificationsConfigured = Boolean(TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID);
+  const taipeiHour = Number(new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Taipei', hour: '2-digit', hour12: false,
+  }).format(checkedAt));
+  const quiet = config.quietHours?.enabled !== false
+    && (taipeiHour >= Number(config.quietHours?.startHour ?? 23) || taipeiHour < Number(config.quietHours?.endHour ?? 8));
+
+  for (const result of slotResults) {
+    const previousResult = previous?.slotResults?.find((item) => item.slotId === result.slotId);
+    const transitioned = result.isConditionMet && previousResult && !previousResult.isConditionMet;
+    if ((FORCE_NOTIFY && result.isConditionMet) || transitioned) {
+      if (!notificationsConfigured) {
+        console.warn(`Telegram Secrets not configured; skipped ${result.label}`);
+      } else if (quiet) {
+        console.log(`Quiet hours active; skipped Telegram for ${result.label}`);
+      } else {
+        await sendTelegram(result, checkedAt);
+        console.log(`Telegram sent for ${result.label}`);
+      }
     }
   }
 
-  if (shouldAlert && triggeredSlot) {
-    console.log(`🚨 偵測到名額達標！準備發送 Telegram 通知...`);
+  const status = {
+    success: true,
+    timestamp: checkedAt.toISOString(),
+    previousTimestamp: previous?.timestamp || null,
+    sourceUrl: SOURCE_URL,
+    notificationsConfigured,
+    slotResults,
+    allGroups,
+  };
 
-    if (QUIET_HOURS_ENABLED && isQuietTime) {
-      console.log('🌙 夜間免打擾生效中，暫緩推播。');
-      return;
-    }
-
-    const message = `🚨 <b>【KKHoliday 名額釋出警報！】</b>\n` +
-      `⏰ 偵測時間：${taipeiTimeStr}\n` +
-      `══════════════════\n` +
-      `<b>監控梯次:</b> ${triggeredSlot.slot.label}\n` +
-      `<b>梯次日期:</b> ${triggeredSlot.slot.targetDate}\n` +
-      `<b>可售名額:</b> 🔥 <b>${triggeredSlot.available} 人</b> (名額釋出！)\n` +
-      `<b>報名連結:</b> <a href="${triggeredSlot.matched.orderUrl}">立即前往官網搶位</a>\n` +
-      `══════════════════\n` +
-      `<i>名額稍縱即逝，請點擊下方按鈕立即填單！</i>`;
-
-    const success = await sendTelegramMessage(message, triggeredSlot.matched.orderUrl);
-    console.log(`📬 Telegram 通知發送結果: ${success ? '成功' : '失敗'}`);
-  } else {
-    console.log('ℹ️ 目前監控梯次可售名額尚未釋出，狀態正常。');
-  }
+  await fs.mkdir(path.dirname(STATUS_PATH), { recursive: true });
+  await fs.writeFile(STATUS_PATH, `${JSON.stringify(status, null, 2)}\n`, 'utf8');
+  console.log(`Wrote ${allGroups.length} departures to ${STATUS_PATH}`);
 }
 
-run().catch((err) => {
-  console.error('❌ 執行失敗:', err);
-  process.exit(1);
+main().catch((error) => {
+  console.error(`Monitor failed: ${error.stack || error.message}`);
+  process.exitCode = 1;
 });

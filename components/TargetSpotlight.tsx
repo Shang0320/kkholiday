@@ -59,16 +59,16 @@ export function TargetSpotlight({
         />
         <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-900/60 to-black/30" />
 
-        <div className="absolute inset-0 p-6 sm:p-8 flex flex-col justify-between">
+        <div className="absolute inset-0 p-4 sm:p-8 flex flex-col justify-between">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-xs font-medium text-stone-200 bg-black/40 backdrop-blur-md px-3 py-1 rounded-md border border-white/10">
+            <div className="flex flex-wrap items-center gap-1.5 text-2xs sm:text-xs font-medium text-stone-200 bg-black/40 backdrop-blur-md px-2.5 sm:px-3 py-1 rounded-md border border-white/10">
               <span className="font-semibold text-sky-300">太平山山毛櫸一日遊 (ILN34)</span>
               <span aria-hidden="true" className="text-stone-400">·</span>
               <span className="text-amber-300 flex items-center gap-1">
                 <Layers className="w-3.5 h-3.5" /> 雙梯次同步監控
               </span>
-              <span aria-hidden="true" className="text-stone-400">·</span>
-              <span className="text-indigo-300 flex items-center gap-1">
+              <span aria-hidden="true" className="hidden sm:inline text-stone-400">·</span>
+              <span className="hidden sm:flex text-indigo-300 items-center gap-1">
                 <Moon className="w-3.5 h-3.5" /> 23~08 夜間免打擾
               </span>
             </div>
@@ -83,18 +83,18 @@ export function TargetSpotlight({
           </div>
 
           <div className="space-y-1">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-sm">
+            <h1 className="text-xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-sm">
               太平山 山毛櫸一日遊 · 雙梯次即時監控
             </h1>
             <p className="text-stone-300 text-xs sm:text-sm">
-              可同時鎖定 2 個不同出發日期梯次（如首選 10/31 週六 + 備選 10/24 或 11/01），任一梯次名額釋出立即推播通知！
+              可同時鎖定 2 個不同出發日期梯次；GitHub 每 5 分鐘更新名額，符合條件即由 Telegram 通知。
             </p>
           </div>
         </div>
       </div>
 
       {/* Slots Container: 2 Monitoring Cards side-by-side */}
-      <div className="p-6 sm:p-8 space-y-6">
+      <div className="p-4 sm:p-8 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-200 pb-4">
           <div className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-sky-600" />
@@ -128,7 +128,7 @@ export function TargetSpotlight({
             return (
               <div
                 key={slot.id}
-                className={`rounded-xl border p-5 transition-all flex flex-col justify-between ${
+                className={`min-w-0 rounded-xl border p-4 sm:p-5 transition-all flex flex-col justify-between ${
                   isMet
                     ? 'border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-500/20 shadow-md'
                     : 'border-stone-200 bg-stone-50/60 hover:border-stone-300'
@@ -136,16 +136,16 @@ export function TargetSpotlight({
               >
                 <div className="space-y-4">
                   {/* Slot Header */}
-                  <div className="flex items-center justify-between gap-2 border-b border-stone-200/80 pb-3">
-                    <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-start justify-between gap-2 border-b border-stone-200/80 pb-3">
+                    <div className="flex min-w-0 items-center gap-2">
                       <span className={`flex items-center justify-center w-6 h-6 rounded-md text-white font-bold text-xs ${index === 0 ? 'bg-sky-600' : 'bg-purple-600'}`}>
                         {index + 1}
                       </span>
-                      <div>
+                      <div className="min-w-0">
                         <span className="text-xs font-bold text-stone-900 block">
                           {slot.label}
                         </span>
-                        <span className="text-2xs text-stone-500 font-mono">
+                        <span className="block truncate text-2xs text-stone-500 font-mono">
                           團號 {slot.targetCode}
                         </span>
                       </div>
@@ -199,7 +199,7 @@ export function TargetSpotlight({
                   </div>
 
                   {/* Metrics Row */}
-                  <div className="grid grid-cols-2 gap-3 py-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 py-2">
                     <div className="p-3 rounded-lg bg-white border border-stone-200">
                       <span className="text-2xs text-stone-500 block">即時可售名額</span>
                       <div className="flex items-baseline gap-1 mt-0.5">
@@ -287,11 +287,11 @@ export function TargetSpotlight({
                 </div>
 
                 {/* Actions for this Slot */}
-                <div className="pt-4 mt-2 border-t border-stone-200/80 flex items-center justify-between gap-2">
+                <div className="pt-4 mt-2 border-t border-stone-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <button
                     type="button"
                     onClick={() => onSimulateSlotAvailable(slot.id)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 text-2xs font-semibold text-sky-800 bg-sky-100 hover:bg-sky-200 rounded-md transition-colors cursor-pointer border border-sky-200"
+                    className="inline-flex w-full sm:w-auto items-center justify-center gap-1 px-2.5 py-2 sm:py-1.5 text-xs sm:text-2xs font-semibold text-sky-800 bg-sky-100 hover:bg-sky-200 rounded-md transition-colors cursor-pointer border border-sky-200"
                     title="模擬此梯次釋出名額以測試推播"
                   >
                     <Sparkles className="w-3 h-3 text-sky-600" />
@@ -302,7 +302,7 @@ export function TargetSpotlight({
                     href={orderUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    className={`inline-flex w-full sm:w-auto items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold transition-all ${
                       isMet
                         ? (slot.comparisonOperator === '<='
                             ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-xs animate-bounce'
