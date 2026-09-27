@@ -1,0 +1,28 @@
+name: KKHoliday 24H Autonomous Monitor
+
+on:
+  schedule:
+    # 每 5 分鐘在 GitHub 雲端自動執行巡檢
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # 支援在 GitHub 網頁上手動點擊立即執行
+
+jobs:
+  check-seats:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run KKHoliday Double Slots Seat Checker
+        env:
+          TELEGRAM_BOT_TOKEN: '8887558205:AAGwaaNTJRx3DnPncPFvoLzWN7TJiFZ2_4o'
+          TELEGRAM_CHAT_ID: '1177409998'
+          QUIET_HOURS_ENABLED: 'true'
+        run: node scripts/monitor.js
