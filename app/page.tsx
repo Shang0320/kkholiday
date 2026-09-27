@@ -438,6 +438,7 @@ export default function HomePage() {
         onManualRefresh={() => executeCheck(true)}
         isLoading={isLoading}
         countdown={countdown}
+        quietHoursEnabled={config.quietHoursEnabled}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -453,6 +454,7 @@ export default function HomePage() {
           onSimulateSlotAvailable={handleSimulateSlotAvailable}
           isLoading={isLoading}
           allGroups={allGroups}
+          quietHoursEnabled={config.quietHoursEnabled}
         />
 
         {/* Configuration Section: Telegram Push & Monitoring Cadence */}

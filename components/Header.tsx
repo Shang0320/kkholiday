@@ -9,6 +9,7 @@ interface HeaderProps {
   onManualRefresh: () => void;
   isLoading: boolean;
   countdown: number;
+  quietHoursEnabled: boolean;
 }
 
 export function Header({
@@ -17,6 +18,7 @@ export function Header({
   onManualRefresh,
   isLoading,
   countdown,
+  quietHoursEnabled,
 }: HeaderProps) {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-stone-200 bg-white/95 backdrop-blur-sm shadow-xs">
@@ -35,9 +37,9 @@ export function Header({
                 <Cloud className="w-3 h-3 text-sky-600" />
                 雲端 24h
               </span>
-              <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold bg-indigo-100 text-indigo-800">
-                <Moon className="w-3 h-3 text-indigo-600" />
-                23~08 靜音
+              <span className={`hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold ${quietHoursEnabled ? 'bg-indigo-100 text-indigo-800' : 'bg-amber-100 text-amber-800'}`}>
+                <Moon className={`w-3 h-3 ${quietHoursEnabled ? 'text-indigo-600' : 'text-amber-600'}`} />
+                {quietHoursEnabled ? '23~08 靜音' : '夜間通知開啟'}
               </span>
             </div>
           </div>

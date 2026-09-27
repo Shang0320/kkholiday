@@ -35,6 +35,7 @@ interface TargetSpotlightProps {
   onSimulateSlotAvailable: (slotId: string) => void;
   isLoading: boolean;
   allGroups: TourGroup[];
+  quietHoursEnabled: boolean;
 }
 
 export function TargetSpotlight({
@@ -48,6 +49,7 @@ export function TargetSpotlight({
   onSimulateSlotAvailable,
   isLoading,
   allGroups,
+  quietHoursEnabled,
 }: TargetSpotlightProps) {
   const anyConditionMet = slotResults.some((r) => r.isConditionMet);
   const [tokenDialogSlot, setTokenDialogSlot] = useState<string | null>(null);
@@ -121,8 +123,8 @@ export function TargetSpotlight({
                 <Layers className="w-3.5 h-3.5" /> 雙梯次同步監控
               </span>
               <span aria-hidden="true" className="hidden sm:inline text-stone-400">·</span>
-              <span className="hidden sm:flex text-indigo-300 items-center gap-1">
-                <Moon className="w-3.5 h-3.5" /> 23~08 夜間免打擾
+              <span className={`hidden sm:flex items-center gap-1 ${quietHoursEnabled ? 'text-indigo-300' : 'text-amber-300'}`}>
+                <Moon className="w-3.5 h-3.5" /> {quietHoursEnabled ? '23~08 夜間免打擾' : '夜間 Telegram 已開啟'}
               </span>
             </div>
 
